@@ -1,0 +1,34 @@
+﻿<Window x:Class="JsonDecoder.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:JsonDecoder"
+        mc:Ignorable="d"
+        Title="JsonDecoder" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Button Content="Open JSON File" Click="OpenFile_Click" Margin="10"/>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <ListBox x:Name="PropertyListBox" Grid.Column="0" Margin="10" SelectionChanged="PropertyListBox_SelectionChanged"/>
+
+            <TextBox x:Name="ValueTextBox" Grid.Column="1" Margin="10" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button Content="Back" Click="Back_Click" Margin="10" Width="100"/>
+            <Button Content="Reset" Click="Reset_Click" Margin="10" Width="100"/>
+        </StackPanel>
+    </Grid>
+</Window>
