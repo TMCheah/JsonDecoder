@@ -5,9 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:JsonDecoder"
         mc:Ignorable="d"
-        Title="JsonDecoder" Height="450" Width="800">
+        Title="JsonDecoder" Height="500" Width="800">
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
@@ -15,7 +16,9 @@
 
         <Button Content="Open JSON File" Click="OpenFile_Click" Margin="10"/>
 
-        <Grid Grid.Row="1">
+        <TextBlock x:Name="FileNameTextBlock" Grid.Row="1" Margin="10,0,10,10" FontWeight="Bold"/>
+
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -26,7 +29,7 @@
             <TextBox x:Name="ValueTextBox" Grid.Column="1" Margin="10" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
         </Grid>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center">
             <Button Content="Back" Click="Back_Click" Margin="10" Width="100"/>
             <Button Content="Reset" Click="Reset_Click" Margin="10" Width="100"/>
         </StackPanel>

@@ -13,6 +13,7 @@ namespace JsonDecoder
     {
         private JToken _rootToken;
         private Stack<JToken> _navigationStack = new Stack<JToken>();
+        private string nonIndexSelectedProperty = "";
 
         public MainWindow()
         {
@@ -34,6 +35,7 @@ namespace JsonDecoder
                     _rootToken = JToken.Parse(jsonContent);
                     _navigationStack.Clear();
                     DisplayProperties(_rootToken);
+                    FileNameTextBlock.Text = $"Current File: {Path.GetFileName(openFileDialog.FileName)}";
                 }
                 catch (Exception ex)
                 {
@@ -49,19 +51,42 @@ namespace JsonDecoder
 
             if (token is JObject jObject)
             {
-                foreach (var property in jObject.Properties())
+                if (jObject.Count == 0)
                 {
-                    PropertyListBox.Items.Add(property.Name);
+                    ValueTextBox.Text = $"{nonIndexSelectedProperty}: Empty object {{}}";
+                }
+                else
+                {
+                    foreach (var property in jObject.Properties())
+                    {
+                        PropertyListBox.Items.Add(property.Name);
+                    }
                 }
             }
             else if (token is JArray jArray)
             {
-                for (int i = 0; i < jArray.Count; i++)
+                if (jArray.Count == 0)
                 {
-                    PropertyListBox.Items.Add($"[{i}]");
+                    ValueTextBox.Text = $"{nonIndexSelectedProperty}: Empty array []";
+                }
+                else
+                {
+                    for (int i = 0; i < jArray.Count; i++)
+                    {
+                        PropertyListBox.Items.Add($"{nonIndexSelectedProperty} [{i}]");
+                    }
                 }
             }
+            else if (token.Type == JTokenType.Null)
+            {
+                ValueTextBox.Text = $"{nonIndexSelectedProperty}: null";
+            }
             else
+            {
+                ValueTextBox.Text = $"{nonIndexSelectedProperty}: {token.ToString()}";
+            }
+
+            if (ValueTextBox.Text == string.Empty)
             {
                 ValueTextBox.Text = token.ToString();
             }
@@ -72,11 +97,14 @@ namespace JsonDecoder
             if (PropertyListBox.SelectedItem != null)
             {
                 string selectedProperty = PropertyListBox.SelectedItem.ToString();
+                selectedProperty = selectedProperty.Replace($"{nonIndexSelectedProperty} ", "");
+
                 JToken currentToken = _navigationStack.Count > 0 ? _navigationStack.Peek() : _rootToken;
 
                 JToken nextToken;
                 if (currentToken is JObject jObject)
                 {
+                    nonIndexSelectedProperty = selectedProperty;
                     nextToken = jObject[selectedProperty];
                 }
                 else if (currentToken is JArray jArray)
@@ -86,6 +114,7 @@ namespace JsonDecoder
                 }
                 else
                 {
+                    nonIndexSelectedProperty = selectedProperty;
                     return;
                 }
 
