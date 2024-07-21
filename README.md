@@ -15,6 +15,12 @@ If you find this project useful, please consider giving it a star ⭐️ on GitH
 	- **Search by Key**: Find all occurrences of a specific key in the JSON structure.
 	- **Search by Value**: Locate all instances of a particular value within the JSON.
 	- **Combined Search**: Search for specific key-value pairs in the JSON.
+- **CSV Export**:
+	- Export search results to a CSV file.
+	- Select specific keys to include in the export.
+	- Flatten nested structures and arrays for easy viewing in spreadsheet applications.
+	- Special handling for null values, empty objects, and empty arrays.
+	- Visual progress indicator during export.
 
 ## Getting Started
 
@@ -52,6 +58,17 @@ If you find this project useful, please consider giving it a star ⭐️ on GitH
    - Enter a value in the "Search Value" text box and click "Search Value" to find all instances of that value.
    - Use both text boxes and click "Combined Search" to find specific key-value pairs.
    - Search results will be displayed in the right panel, showing the path and value of each match.
+9. To export search results to CSV:
+   - After performing a search, click the "Export to CSV" button.
+   - In the popup, select the keys you want to include in the export.
+   - Choose a filename and location for the CSV file.
+   - The export process will begin, with a progress bar indicating the status.
+   - Once complete, you can open the CSV file in your preferred spreadsheet application.
+   - Note: The CSV export handles special cases as follows:
+      - Null values are represented as "NULL"
+      - Empty objects are represented as "{}"
+      - Empty arrays are represented as "[]"
+      - Nested structures are flattened and separated by pipe (|) characters  
 
 ## Technical Details
 

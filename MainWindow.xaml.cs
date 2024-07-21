@@ -1,6 +1,9 @@
 ﻿using Microsoft.Win32;
 using Newtonsoft.Json.Linq;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -14,6 +17,33 @@ namespace JsonDecoder
         private JToken _rootToken;
         private Stack<JToken> _navigationStack = new Stack<JToken>();
         private string nonIndexSelectedProperty = "";
+        private List<KeyValuePair<string, JToken>> _searchResults;
+        private ObservableCollection<KeySelectionItem> _keySelectionItems;
+
+        private class KeySelectionItem : INotifyPropertyChanged
+        {
+            public string Key { get; set; }
+            private bool _isSelected;
+            public bool IsSelected
+            {
+                get => _isSelected;
+                set
+                {
+                    if (_isSelected != value)
+                    {
+                        _isSelected = value;
+                        OnPropertyChanged();
+                    }
+                }
+            }
+
+            public event PropertyChangedEventHandler PropertyChanged;
+
+            protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
 
         public MainWindow()
         {
@@ -218,6 +248,9 @@ namespace JsonDecoder
 
             var results = await Task.Run(() => SearchForKeyValue(_rootToken, searchKey, searchValue));
             DisplaySearchResults(results);
+
+            _searchResults = results;
+            ExportButton.IsEnabled = _searchResults.Count > 0;
         }
 
         private List<KeyValuePair<string, JToken>> SearchForKey(JToken token, string key, string path = "")
@@ -369,6 +402,118 @@ namespace JsonDecoder
                     //ValueTextBox.AppendText($"Path: {result.Key}\nValue: {result.Value}\n\n");
 
                 }
+            }
+        }
+
+        private void ExportButton_Click(object sender, RoutedEventArgs e)
+        {
+            var allKeys = GetAllKeys(_searchResults);
+            _keySelectionItems = new ObservableCollection<KeySelectionItem>(
+                allKeys.Select(k => new KeySelectionItem { Key = k, IsSelected = false })
+            );
+            KeyCheckBoxList.ItemsSource = _keySelectionItems;
+            KeySelectionPopup.IsOpen = true;
+        }
+
+        private async void ConfirmExport_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedKeys = _keySelectionItems
+                .Where(item => item.IsSelected)
+                .Select(item => item.Key)
+                .ToList();
+
+            if (selectedKeys.Count == 0)
+            {
+                MessageBox.Show("Please select at least one key to export.", "Export", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var saveFileDialog = new SaveFileDialog
+            {
+                Filter = "CSV files (*.csv)|*.csv",
+                FileName = "JsonDecoderExport.csv"
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                await ExportToCsv(saveFileDialog.FileName, selectedKeys);
+            }
+
+            KeySelectionPopup.IsOpen = false;
+        }
+
+        private HashSet<string> GetAllKeys(List<KeyValuePair<string, JToken>> results)
+        {
+            var keys = new HashSet<string>();
+            foreach (var result in results)
+            {
+                if (result.Value is JObject jObject)
+                {
+                    foreach (var property in jObject.Properties())
+                    {
+                        keys.Add(property.Name);
+                    }
+                }
+            }
+            return keys;
+        }
+
+        private async Task ExportToCsv(string fileName, List<string> selectedKeys)
+        {
+            ExportProgressBar.Visibility = Visibility.Visible;
+            ExportProgressBar.Value = 0;
+
+            await Task.Run(() =>
+            {
+                using (var writer = new StreamWriter(fileName))
+                {
+                    // Write header
+                    writer.WriteLine(string.Join(",", selectedKeys));
+
+                    // Write data
+                    for (int i = 0; i < _searchResults.Count; i++)
+                    {
+                        var result = _searchResults[i];
+                        var values = new List<string>();
+
+                        foreach (var key in selectedKeys)
+                        {
+                            string value = "NA";
+                            if (result.Value is JObject jObject && jObject.TryGetValue(key, out var jToken))
+                            {
+                                value = FlattenJToken(jToken);
+                            }
+                            values.Add($"\"{value}\"");
+                        }
+
+                        writer.WriteLine(string.Join(",", values));
+
+                        // Update progress
+                        Dispatcher.Invoke(() => ExportProgressBar.Value = (i + 1) * 100 / _searchResults.Count);
+                    }
+                }
+            });
+
+            ExportProgressBar.Visibility = Visibility.Collapsed;
+            MessageBox.Show("Export completed successfully!", "Export", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private string FlattenJToken(JToken token)
+        {
+            switch (token.Type)
+            {
+                case JTokenType.Null:
+                    return "NULL";
+                case JTokenType.Array:
+                    if (!token.HasValues)
+                        return "[]";
+                    return $"[{string.Join("|", token.Select(FlattenJToken))}]";
+                case JTokenType.Object:
+                    if (!token.HasValues)
+                        return "{}";
+                    return $"{{{string.Join("|", token.Children<JProperty>().Select(p => $"{p.Name}:{FlattenJToken(p.Value)}"))}}}";
+                default:
+                    return token.ToString().Replace(",", "\\,").Replace("\"", "\"\"").Replace("|", "\\|");
             }
         }
     }
