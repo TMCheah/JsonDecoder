@@ -35,7 +35,7 @@ namespace JsonDecoder
                     _rootToken = await Task.Run(() => JToken.Parse(jsonContent));
                     _navigationStack.Clear();
                     DisplayProperties(_rootToken);
-                    FileNameTextBlock.Text = $"Current File: {Path.GetFileName(openFileDialog.FileName)}";
+                    FileNameTextBlock.Text = $"Current File: {Path.GetFullPath(openFileDialog.FileName)}";
                 }
                 catch (Exception ex)
                 {
@@ -125,6 +125,9 @@ namespace JsonDecoder
 
         private void Back_Click(object sender, RoutedEventArgs e)
         {
+            if (_rootToken is null)
+                return;
+
             if (_navigationStack.Count > 0)
             {
                 _navigationStack.Pop();
@@ -135,8 +138,27 @@ namespace JsonDecoder
 
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
+            if (_rootToken is null)
+                return;
+
+            SearchKeyTextBox.Text = "";
+            SearchValueTextBox.Text = "";
             _navigationStack.Clear();
             DisplayProperties(_rootToken);
+        }
+        private void Clear_Click(object sender, RoutedEventArgs e)
+        {
+            if (_rootToken is null)
+                return;
+
+            _rootToken = null;
+            SearchKeyTextBox.Text = "";
+            SearchValueTextBox.Text = "";
+            _navigationStack.Clear();
+            PropertyListBox.Items.Clear();
+            _navigationStack.Clear();
+            ValueTextBox.Text = "";
+            FileNameTextBlock.Text = $"Current File: ";
         }
 
         private async void SearchKey_Click(object sender, RoutedEventArgs e)
@@ -145,6 +167,12 @@ namespace JsonDecoder
             if (string.IsNullOrEmpty(searchKey))
             {
                 MessageBox.Show("Please enter a key to search.", "Search Key", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (_rootToken is null)
+            {
+                MessageBox.Show("Please open a JSON file before search.", "Search Key", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -161,6 +189,12 @@ namespace JsonDecoder
                 return;
             }
 
+            if (_rootToken is null)
+            {
+                MessageBox.Show("Please open a JSON file before search.", "Search Value", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             var results = await Task.Run(() => SearchForValue(_rootToken, searchValue));
             DisplaySearchResults(results);
         }
@@ -170,9 +204,15 @@ namespace JsonDecoder
             string searchKey = SearchKeyTextBox.Text.Trim();
             string searchValue = SearchValueTextBox.Text.Trim();
 
-            if (string.IsNullOrEmpty(searchKey) && string.IsNullOrEmpty(searchValue))
+            if (string.IsNullOrEmpty(searchKey) || string.IsNullOrEmpty(searchValue))
             {
                 MessageBox.Show("Please enter a key and/or value to search.", "Combined Search", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (_rootToken is null)
+            {
+                MessageBox.Show("Please open a JSON file before search.", "Combined Search", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -233,7 +273,7 @@ namespace JsonDecoder
                     results.AddRange(SearchForValue(jArray[i], value, currentPath));
                 }
             }
-            else if (token.HasValues == false && token.ToString().Contains(value))
+            else if (token.HasValues == false && token.ToString().Equals(value))
             {
                 results.Add(new KeyValuePair<string, JToken>(path, token));
             }
@@ -241,7 +281,7 @@ namespace JsonDecoder
             return results;
         }
 
-        private List<KeyValuePair<string, JToken>> SearchForKeyValue(JToken token, string key, string value, string path = "")
+        private List<KeyValuePair<string, JToken>> SearchForKeyValue(JToken token, string key, string value, string currentKey = "", string path = "")
         {
             var results = new List<KeyValuePair<string, JToken>>();
 
@@ -250,14 +290,14 @@ namespace JsonDecoder
                 foreach (var property in jObject.Properties())
                 {
                     string currentPath = string.IsNullOrEmpty(path) ? property.Name : $"{path}.{property.Name}";
-                    if ((string.IsNullOrEmpty(key) || property.Name.Equals(key, StringComparison.OrdinalIgnoreCase)) &&
-                        (string.IsNullOrEmpty(value) || property.Value.ToString().Equals(value)))
+
+                    if (property.Name.Equals(key, StringComparison.OrdinalIgnoreCase) && property.Value.ToString().Equals(value))
                     {
                         // Return the entire parent object containing the matching key-value pair
                         results.Add(new KeyValuePair<string, JToken>(path, jObject));
                         return results; // Stop searching further in this branch
                     }
-                    results.AddRange(SearchForKeyValue(property.Value, key, value, currentPath));
+                    results.AddRange(SearchForKeyValue(property.Value, key, value, property.Name, currentPath));
                 }
             }
             else if (token is JArray jArray)
@@ -265,10 +305,10 @@ namespace JsonDecoder
                 for (int i = 0; i < jArray.Count; i++)
                 {
                     string currentPath = $"{path}[{i}]";
-                    results.AddRange(SearchForKeyValue(jArray[i], key, value, currentPath));
+                    results.AddRange(SearchForKeyValue(jArray[i], key, value, currentKey, currentPath));
                 }
             }
-            else if (token.HasValues == false && token.ToString().Contains(value))
+            else if (token.HasValues == false && currentKey.Equals(key) && token.ToString().Equals(value))
             {
                 results.Add(new KeyValuePair<string, JToken>(path, token));
             }
@@ -319,6 +359,10 @@ namespace JsonDecoder
                     else if (result.Value.Type is JTokenType.Null)
                     {
                         value = "is nulll";
+                    }
+                    else
+                    {
+                        value = result.Value.ToString();
                     }
                     
                     ValueTextBox.AppendText($"Path: {result.Key}\nValue: {value}\n\n");

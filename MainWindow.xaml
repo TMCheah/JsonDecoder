@@ -48,6 +48,7 @@
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center">
             <Button Content="Back" Click="Back_Click" Margin="10" Width="100"/>
             <Button Content="Reset" Click="Reset_Click" Margin="10" Width="100"/>
+            <Button Content="Clear" Click="Clear_Click" Margin="10" Width="100"/>
         </StackPanel>
     </Grid>
 </Window>
