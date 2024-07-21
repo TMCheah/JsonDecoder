@@ -10,15 +10,31 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Button Content="Open JSON File" Click="OpenFile_Click" Margin="10"/>
 
-        <TextBlock x:Name="FileNameTextBlock" Grid.Row="1" Margin="10,0,10,10" FontWeight="Bold"/>
+        <TextBlock x:Name="FileNameTextBlock" Grid.Row="1" Margin="10,0,10,10" FontWeight="Bold">Current File: </TextBlock>
 
         <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="SearchKeyTextBox" Grid.Column="0" Margin="10,5" VerticalAlignment="Center"/>
+            <Button Content="Search Key" Grid.Column="1" Margin="5" Padding="5" Click="SearchKey_Click"/>
+            <TextBox x:Name="SearchValueTextBox" Grid.Column="2" Margin="10,5" VerticalAlignment="Center"/>
+            <Button Content="Search Value" Grid.Column="3" Margin="5" Padding="5" Click="SearchValue_Click"/>
+            <Button Content="Combined Search" Grid.Column="4" Margin="5" Padding="5" Click="CombinedSearch_Click"/>
+        </Grid>
+
+        <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -29,7 +45,7 @@
             <TextBox x:Name="ValueTextBox" Grid.Column="1" Margin="10" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
         </Grid>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center">
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center">
             <Button Content="Back" Click="Back_Click" Margin="10" Width="100"/>
             <Button Content="Reset" Click="Reset_Click" Margin="10" Width="100"/>
         </StackPanel>

@@ -20,7 +20,7 @@ namespace JsonDecoder
             InitializeComponent();
         }
 
-        private void OpenFile_Click(object sender, RoutedEventArgs e)
+        private async void OpenFile_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
@@ -29,10 +29,10 @@ namespace JsonDecoder
 
             if (openFileDialog.ShowDialog() == true)
             {
-                string jsonContent = File.ReadAllText(openFileDialog.FileName);
                 try
                 {
-                    _rootToken = JToken.Parse(jsonContent);
+                    string jsonContent = await Task.Run(() => File.ReadAllText(openFileDialog.FileName));
+                    _rootToken = await Task.Run(() => JToken.Parse(jsonContent));
                     _navigationStack.Clear();
                     DisplayProperties(_rootToken);
                     FileNameTextBlock.Text = $"Current File: {Path.GetFileName(openFileDialog.FileName)}";
@@ -79,7 +79,7 @@ namespace JsonDecoder
             }
             else if (token.Type == JTokenType.Null)
             {
-                ValueTextBox.Text = $"{nonIndexSelectedProperty}: null";
+                ValueTextBox.Text = $"{nonIndexSelectedProperty}: is null";
             }
             else
             {
@@ -137,6 +137,195 @@ namespace JsonDecoder
         {
             _navigationStack.Clear();
             DisplayProperties(_rootToken);
+        }
+
+        private async void SearchKey_Click(object sender, RoutedEventArgs e)
+        {
+            string searchKey = SearchKeyTextBox.Text.Trim();
+            if (string.IsNullOrEmpty(searchKey))
+            {
+                MessageBox.Show("Please enter a key to search.", "Search Key", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var results = await Task.Run(() => SearchForKey(_rootToken, searchKey));
+            DisplaySearchResults(results);
+        }
+
+        private async void SearchValue_Click(object sender, RoutedEventArgs e)
+        {
+            string searchValue = SearchValueTextBox.Text.Trim();
+            if (string.IsNullOrEmpty(searchValue))
+            {
+                MessageBox.Show("Please enter a value to search.", "Search Value", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var results = await Task.Run(() => SearchForValue(_rootToken, searchValue));
+            DisplaySearchResults(results);
+        }
+
+        private async void CombinedSearch_Click(object sender, RoutedEventArgs e)
+        {
+            string searchKey = SearchKeyTextBox.Text.Trim();
+            string searchValue = SearchValueTextBox.Text.Trim();
+
+            if (string.IsNullOrEmpty(searchKey) && string.IsNullOrEmpty(searchValue))
+            {
+                MessageBox.Show("Please enter a key and/or value to search.", "Combined Search", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var results = await Task.Run(() => SearchForKeyValue(_rootToken, searchKey, searchValue));
+            DisplaySearchResults(results);
+        }
+
+        private List<KeyValuePair<string, JToken>> SearchForKey(JToken token, string key, string path = "")
+        {
+            var results = new List<KeyValuePair<string, JToken>>();
+
+            if (token is JObject jObject)
+            {
+                foreach (var property in jObject.Properties())
+                {
+                    string currentPath = string.IsNullOrEmpty(path) ? property.Name : $"{path}.{property.Name}";
+                    if (property.Name.Equals(key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        results.Add(new KeyValuePair<string, JToken>(currentPath, property.Value));
+                    }
+                    results.AddRange(SearchForKey(property.Value, key, currentPath));
+                }
+            }
+            else if (token is JArray jArray)
+            {
+                for (int i = 0; i < jArray.Count; i++)
+                {
+                    string currentPath = $"{path}[{i}]";
+                    results.AddRange(SearchForKey(jArray[i], key, currentPath));
+                }
+            }
+
+            return results;
+        }
+
+        private List<KeyValuePair<string, JToken>> SearchForValue(JToken token, string value, string path = "")
+        {
+            var results = new List<KeyValuePair<string, JToken>>();
+
+            if (token is JObject jObject)
+            {
+                foreach (var property in jObject.Properties())
+                {
+                    string currentPath = string.IsNullOrEmpty(path) ? property.Name : $"{path}.{property.Name}";
+                    if (property.Value.ToString().Equals(value))
+                    {
+                        results.Add(new KeyValuePair<string, JToken>(currentPath, property.Value));
+                    }
+                    if(property.Value.HasValues)
+                        results.AddRange(SearchForValue(property.Value, value, currentPath));
+                }
+            }
+            else if (token is JArray jArray)
+            {
+                for (int i = 0; i < jArray.Count; i++)
+                {
+                    string currentPath = $"{path}[{i}]";
+                    results.AddRange(SearchForValue(jArray[i], value, currentPath));
+                }
+            }
+            else if (token.HasValues == false && token.ToString().Contains(value))
+            {
+                results.Add(new KeyValuePair<string, JToken>(path, token));
+            }
+
+            return results;
+        }
+
+        private List<KeyValuePair<string, JToken>> SearchForKeyValue(JToken token, string key, string value, string path = "")
+        {
+            var results = new List<KeyValuePair<string, JToken>>();
+
+            if (token is JObject jObject)
+            {
+                foreach (var property in jObject.Properties())
+                {
+                    string currentPath = string.IsNullOrEmpty(path) ? property.Name : $"{path}.{property.Name}";
+                    if ((string.IsNullOrEmpty(key) || property.Name.Equals(key, StringComparison.OrdinalIgnoreCase)) &&
+                        (string.IsNullOrEmpty(value) || property.Value.ToString().Equals(value)))
+                    {
+                        // Return the entire parent object containing the matching key-value pair
+                        results.Add(new KeyValuePair<string, JToken>(path, jObject));
+                        return results; // Stop searching further in this branch
+                    }
+                    results.AddRange(SearchForKeyValue(property.Value, key, value, currentPath));
+                }
+            }
+            else if (token is JArray jArray)
+            {
+                for (int i = 0; i < jArray.Count; i++)
+                {
+                    string currentPath = $"{path}[{i}]";
+                    results.AddRange(SearchForKeyValue(jArray[i], key, value, currentPath));
+                }
+            }
+            else if (token.HasValues == false && token.ToString().Contains(value))
+            {
+                results.Add(new KeyValuePair<string, JToken>(path, token));
+            }
+
+            return results;
+        }
+
+
+        private void DisplaySearchResults(List<KeyValuePair<string, JToken>> results)
+        {
+            if (results.Count == 0)
+            {
+                ValueTextBox.Text = "Not available";
+            }
+            else
+            {
+                ValueTextBox.Clear();
+                foreach (var result in results)
+                {
+                    string value = "";
+
+                    if (result.Value is JObject jObject)
+                    {
+                        if (jObject.Count == 0)
+                        {
+                            value = "Empty object {}";
+                            //ValueTextBox.AppendText($"Path: {result.Key}\nValue:  Empty object {{}}\n\n");
+                        }
+                        else
+                        {
+                            value = result.Value.ToString();
+                            //ValueTextBox.AppendText($"Path: {result.Key}\nValue: {result.Value}\n\n");
+                        }
+                    }
+                    else if (result.Value is JArray jArray)
+                    {
+                        if (jArray.Count == 0)
+                        {
+                            value = "Empty array []";
+                            //ValueTextBox.AppendText($"Path: {result.Key}\nValue:  Empty array []\n\n");
+                        }
+                        else
+                        {
+                            value = result.Value.ToString();
+                            //ValueTextBox.AppendText($"Path: {result.Key}\nValue: {result.Value}\n\n");
+                        }
+                    }
+                    else if (result.Value.Type is JTokenType.Null)
+                    {
+                        value = "is nulll";
+                    }
+                    
+                    ValueTextBox.AppendText($"Path: {result.Key}\nValue: {value}\n\n");
+                    //ValueTextBox.AppendText($"Path: {result.Key}\nValue: {result.Value}\n\n");
+
+                }
+            }
         }
     }
 }

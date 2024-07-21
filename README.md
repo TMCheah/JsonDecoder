@@ -11,6 +11,10 @@ If you find this project useful, please consider giving it a star ⭐️ on GitH
 - **Breadcrumb Navigation**: Easily go back to previous levels in the JSON hierarchy.
 - **Value Display**: View the contents of JSON properties, including special handling for empty objects, empty arrays, and null values.
 - **Current File Display**: Always know which file you're currently exploring.
+- **Search Functionality**:
+	- **Search by Key**: Find all occurrences of a specific key in the JSON structure.
+	- **Search by Value**: Locate all instances of a particular value within the JSON.
+	- **Combined Search**: Search for specific key-value pairs in the JSON.
 
 ## Getting Started
 
@@ -43,6 +47,11 @@ If you find this project useful, please consider giving it a star ⭐️ on GitH
 5. The right panel will display values for terminal nodes (strings, numbers, booleans, or null).
 6. Use the "Back" button to return to the previous level in the JSON hierarchy.
 7. Click "Reset" to return to the top level of the JSON structure.
+8. To search within the JSON:
+   - Enter a key in the "Search Key" text box and click "Search Key" to find all occurrences of that key.
+   - Enter a value in the "Search Value" text box and click "Search Value" to find all instances of that value.
+   - Use both text boxes and click "Combined Search" to find specific key-value pairs.
+   - Search results will be displayed in the right panel, showing the path and value of each match.
 
 ## Technical Details
 
