@@ -34,7 +34,7 @@ If you find this project useful, please consider giving it a star ⭐️ on GitH
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/json-decoder.git
+   git clone https://github.com/tmcheah/json-decoder.git
    ```
 2. Open the solution file `JsonDecoder.sln` in Visual Studio.
 3. Restore NuGet packages:
