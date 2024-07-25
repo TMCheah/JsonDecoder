@@ -15,12 +15,12 @@ If you find this project useful, please consider giving it a star ⭐️ on GitH
 	- **Search by Key**: Find all occurrences of a specific key in the JSON structure.
 	- **Search by Value**: Locate all instances of a particular value within the JSON.
 	- **Combined Search**: Search for specific key-value pairs in the JSON.
-- **CSV Export**:
-	- Export search results to a CSV file.
-	- Select specific keys to include in the export.
-	- Flatten nested structures and arrays for easy viewing in spreadsheet applications.
-	- Special handling for null values, empty objects, and empty arrays.
-	- Visual progress indicator during export.
+- ~~**CSV Export**:~~ Temporary remove this feature
+	- ~~Export search results to a CSV file.~~
+	- ~~Select specific keys to include in the export.~~
+	- ~~Flatten nested structures and arrays for easy viewing in spreadsheet applications.~~
+	- ~~Special handling for null values, empty objects, and empty arrays.~~
+	- ~~Visual progress indicator during export.~~
 
 ## Getting Started
 
