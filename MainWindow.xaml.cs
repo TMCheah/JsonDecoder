@@ -20,6 +20,7 @@ namespace JsonDecoder
         private ConcurrentDictionary<string, long> _keyIndex = new ConcurrentDictionary<string, long>();
         private CancellationTokenSource _indexingCancellationTokenSource;
         private CancellationTokenSource _searchCancellationTokenSource;
+        private string nonIndexSelectedProperty = "";
 
         public MainWindow()
         {
@@ -49,6 +50,7 @@ namespace JsonDecoder
 
         private async Task LoadJsonFile(string filePath)
         {
+            nonIndexSelectedProperty = "";
             _fileSize = new FileInfo(filePath).Length;
             _memoryMappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open);
 
@@ -123,22 +125,47 @@ namespace JsonDecoder
 
             if (lazyToken.Token is JObject jObject)
             {
-                foreach (var property in jObject.Properties())
+                if (jObject.Count == 0)
                 {
-                    PropertyListBox.Items.Add(property.Name);
+                    ValueTextBox.Text = $"{nonIndexSelectedProperty}: Empty object {{}}";
+                }
+                else
+                {
+                    foreach (var property in jObject.Properties())
+                    {
+                        PropertyListBox.Items.Add(property.Name);
+                    }
                 }
             }
             else if (lazyToken.Token is JArray jArray)
             {
-                for (int i = 0; i < jArray.Count; i++)
+                if (jArray.Count == 0)
                 {
-                    PropertyListBox.Items.Add($"[{i}]");
+                    ValueTextBox.Text = $"{nonIndexSelectedProperty}: Empty array []";
                 }
+                else
+                {
+                    for (int i = 0; i < jArray.Count; i++)
+                    {
+                        PropertyListBox.Items.Add($"{nonIndexSelectedProperty} [{i}]");
+                    }
+                }
+            }
+            else if (lazyToken.Token.Type == JTokenType.Null)
+            {
+                ValueTextBox.Text = $"{nonIndexSelectedProperty}: is null";
             }
             else
             {
+                ValueTextBox.Text = $"{nonIndexSelectedProperty}: {lazyToken.Token.ToString()}";
+            }
+
+            if (ValueTextBox.Text == string.Empty)
+            {
                 ValueTextBox.Text = lazyToken.Token.ToString();
             }
+
+            //ValueTextBox.Text = lazyToken.Token.ToString();
         }
 
         private void PropertyListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -146,21 +173,29 @@ namespace JsonDecoder
             if (PropertyListBox.SelectedItem != null)
             {
                 string selectedProperty = PropertyListBox.SelectedItem.ToString();
+                selectedProperty = selectedProperty.Replace($"{nonIndexSelectedProperty} ", "");
+
                 LazyJToken currentToken = _navigationStack.Peek();
 
                 LazyJToken nextToken;
+                JToken valueToken = null;
                 if (currentToken.Token is JObject jObject)
                 {
+                    nonIndexSelectedProperty = selectedProperty;
+
                     var property = jObject.Property(selectedProperty);
                     nextToken = new LazyJToken(property.Value, property.Value.Path);
+                    valueToken = property.Value;
                 }
                 else if (currentToken.Token is JArray jArray)
                 {
                     int index = int.Parse(selectedProperty.Trim('[', ']'));
                     nextToken = new LazyJToken(jArray[index], jArray[index].Path);
+                    valueToken = jArray[index];
                 }
                 else
                 {
+                    nonIndexSelectedProperty = selectedProperty;
                     return;
                 }
 
@@ -200,6 +235,7 @@ namespace JsonDecoder
             ValueTextBox.Clear();
             FileNameTextBlock.Text = "Current File: ";
             _indexingCancellationTokenSource?.Cancel();
+            nonIndexSelectedProperty = "";
         }
 
         private async void SearchKey_Click(object sender, RoutedEventArgs e)
