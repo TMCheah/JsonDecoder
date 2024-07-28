@@ -162,10 +162,26 @@ namespace JsonDecoder
 
             if (ValueTextBox.Text == string.Empty)
             {
-                ValueTextBox.Text = lazyToken.Token.ToString();
-            }
+                long stringSize = lazyToken.Token.ToString().Length * sizeof(char);
+                string partialValue = "";
 
-            //ValueTextBox.Text = lazyToken.Token.ToString();
+                /*
+                 * 1024*sizeof(char) = 2kb
+                 * 10240*sizeof(char) = 20kb
+                 * 102400*sizeof(char) = 200kb
+                 * 1024000*sizeof(char) = 2mb
+                 */
+
+                if (stringSize > 10240*sizeof(char))
+                {
+                    partialValue = lazyToken.Token.ToString().Substring(0, 10240 * sizeof(char)) + "\n... Value too large to load";
+                    ValueTextBox.Text = partialValue;
+                }
+                else
+                {
+                    ValueTextBox.Text = lazyToken.Token.ToString();
+                }
+            }
         }
 
         private void PropertyListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
